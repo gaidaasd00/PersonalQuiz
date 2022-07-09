@@ -21,23 +21,47 @@ class QuestionsViewController: UIViewController {
     
     @IBOutlet var rangeStackView: UIStackView!
     @IBOutlet var rangedLables: [UILabel]!
-    @IBOutlet var rangedSlider: UISlider!
+    @IBOutlet var rangedSlider: UISlider! { // что бы слайдер принимал значения по коллиеству вариантов ответа
+        didSet {
+            let answersCount = Float(currentAnswers.count - 1)
+            rangedSlider.maximumValue = answersCount
+            rangedSlider.value = answersCount / 2 // бегунок слайдера установлен по середине
+        }
+    }
     
     private let questions = Questin.getQuestions()
+    private var answersChosen: [Answer] = []
     private var questionIndex = 0 // текущий индекс массива
+    private var currentAnswers: [Answer] {
+        questions[questionIndex].answers
+    }
+
 
     override func viewDidLoad() {
         super.viewDidLoad()
         updateUI()
     }
 
-    @IBAction func singleAnswerButtonPreessed(_ sender: UIButton) {
+    @IBAction func singleAnswerButtonPreessed(_ sender: UIButton) { // извлечение ответа по индексу
+        guard let buttonIndex = singleButotns.firstIndex(of: sender) else { return }
+        let answer = currentAnswers[buttonIndex]
+        answersChosen.append(answer)
+        nextQuestion()
     }
     
     @IBAction func multipalButtonAnswerPressed() {
+        for (multipalSwitch, answer) in zip(multipalSwitches, currentAnswers) {
+            if multipalSwitch.isOn {
+                answersChosen.append(answer)
+            }
+        }
+        nextQuestion()
     }
     
     @IBAction func rangedAnswerButtonPressed() {
+        let index = lrintf(rangedSlider.value) // извлечение ответа в соответствии с положением слайдера lrintf- округлени до целых имеено флоат
+        answersChosen.append(currentAnswers[index])
+        nextQuestion()
     }
 }
 
@@ -68,17 +92,43 @@ extension QuestionsViewController  {
     }
     private func showCurrentAnswers(for type: ResponseType) {
         switch type {
-        case .single: break
-        case .multipal: break
-        case .ranged: break
+        case .single: showSingleStackView(with: currentAnswers)
+        case .multipal: showMultipalSteckView(with: currentAnswers)
+        case .ranged: showRangeStackView(with: currentAnswers)
         }
     }
     private func showSingleStackView(with answers: [Answer]) { // отабразить стек с одиночнимы ответами
-        singleStackView.isHidden = false
+        singleStackView.isHidden.toggle()
         //присвоение каждой кнопке название
         for (button, answer) in zip(singleButotns, answers) {
-            
+            button.setTitle(answer.title, for: .normal)
         }
         
+    }
+    
+    private func showMultipalSteckView(with answers: [Answer]) {
+        multipalStackView.isHidden.toggle()
+        
+        for (lable, answer) in zip(multipalLabels, answers) {
+            lable.text = answer.title
+        }
+    }
+    
+    private func showRangeStackView(with answers: [Answer]) {
+        rangeStackView.isHidden.toggle()
+        
+        rangedLables.first?.text = answers.first?.title
+        rangedLables.last?.text = answers.last?.title
+        
+    }
+    
+    private func nextQuestion() { // переход к следующему вопросу
+        questionIndex += 1
+        
+        if questionIndex < questions.count { // проверяем закончились ли вопросы
+            updateUI() // скрываються элементы, и все обновляеться
+            return
+        }
+        performSegue(withIdentifier: "showResult", sender: nil)
     }
 }
