@@ -41,6 +41,11 @@ class QuestionsViewController: UIViewController {
         super.viewDidLoad()
         updateUI()
     }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        guard let resultVC = segue.destination as? ResultViewController else { return }
+        resultVC.answers = answersChosen
+    }
 
     @IBAction func singleAnswerButtonPreessed(_ sender: UIButton) { // извлечение ответа по индексу
         guard let buttonIndex = singleButotns.firstIndex(of: sender) else { return }
